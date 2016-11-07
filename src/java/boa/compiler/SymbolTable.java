@@ -589,6 +589,10 @@ public class SymbolTable {
 
 	public BoaFunction getFunction(final String id, final BoaType[] formalParameters) {
 		BoaFunction function = globalFunctions.getFunction(id, formalParameters);
+		if(id.equals("push")){
+			if (formalParameters[1] instanceof BoaStack)
+				function = null;
+		}
 		if (function == null)
 			function = this.functions.getFunction(id, formalParameters);
 		if (function == null)
