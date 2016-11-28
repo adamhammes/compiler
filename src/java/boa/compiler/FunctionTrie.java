@@ -19,9 +19,12 @@ package boa.compiler;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import boa.functions.constraints.BoaFunctionConstraint;
 import boa.types.BoaFunction;
 import boa.types.BoaName;
+import boa.types.BoaStack;
 import boa.types.BoaType;
+import boa.types.BoaTypeVar;
 import boa.types.BoaVarargs;
 
 
@@ -81,7 +84,24 @@ public class FunctionTrie {
 
 		return this.getFunction(ids);
 	}
-
+	
+	public BoaFunction checkFunction(final String name, final BoaType[] formalParameters) {
+	
+		BoaFunction function = this.getFunction(name, formalParameters);
+		if(function == null)
+			return null;
+		
+		if(this.functionConstraints == null)
+			return function;
+		
+		for (int i = 0; i < this.functionConstraints.length; i++){
+			if(!this.functionConstraints[i].isValid(formalParameters))
+				return null;
+		}
+			
+			return function;
+		
+	}
 	@SuppressWarnings("unchecked")
 	private void addFunction(final Object[] ids, final BoaFunction boaFunction) {
 		if (this.trie.containsKey(ids[0])) {
@@ -117,5 +137,10 @@ public class FunctionTrie {
 		ids[ids.length - 1] = "";
 
 		this.addFunction(ids, boaFunction);
+	}
+	
+	public void addFunction(final String name, final BoaFunction boaFunction, BoaFunctionConstraint[] constraints) {
+		this.functionConstraints = constraints;
+		this.addFunction(name, boaFunction);		
 	}
 }
