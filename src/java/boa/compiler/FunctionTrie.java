@@ -33,6 +33,8 @@ import boa.types.BoaVarargs;
  * @author rdyer
  */
 public class FunctionTrie {
+	
+	private BoaFunctionConstraint[] functionConstraints;
 	@SuppressWarnings("rawtypes")
 	private final HashMap trie;
 
