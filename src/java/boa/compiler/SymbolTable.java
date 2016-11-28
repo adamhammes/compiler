@@ -26,10 +26,12 @@ import org.scannotation.AnnotationDB;
 
 import boa.aggregators.AggregatorSpec;
 import boa.functions.FunctionSpec;
+import boa.functions.constraints.BoaFunctionConstraint;
+import boa.functions.constraints.CollectionFunctionConstraint;
 import boa.types.*;
 import boa.types.proto.*;
 import boa.types.proto.enums.*;
-
+import boa.compiler.ast.Identifier;
 import boa.compiler.ast.Operand;
 
 /**
@@ -157,7 +159,8 @@ public class SymbolTable {
 		globalFunctions.addFunction("ast_len", new BoaFunction(new BoaInt(), new BoaType[] { new BoaAny() }, "boa.functions.BoaAstIntrinsics.lenVisitor.getCount(${0})"));
 
 		// stack functions
-		globalFunctions.addFunction("push", new BoaFunction(new BoaAny(), new BoaType[] { new BoaStack(new BoaTypeVar("V")), new BoaTypeVar("V") }, "${0}.push(${1})"));
+		globalFunctions.addFunction("push", new BoaFunction(new BoaAny(), new BoaType[] { new BoaStack(new BoaTypeVar("V")), new BoaTypeVar("V") }, "${0}.push(${1})"), new BoaFunctionConstraint[]{ new CollectionFunctionConstraint(0, 1)});
+		//globalFunctions.addFunction("push", new BoaFunction(new BoaAny(), new BoaType[] { new BoaStack(new BoaTypeVar("V")), new BoaTypeVar("V") }, "${0}.push(${1})"));
 		globalFunctions.addFunction("pop", new BoaFunction(new BoaTypeVar("V"), new BoaType[] { new BoaStack(new BoaTypeVar("V")) }, "boa.functions.BoaIntrinsics.stack_pop(${0})"));
 		globalFunctions.addFunction("peek", new BoaFunction(new BoaTypeVar("V"), new BoaType[] { new BoaStack(new BoaTypeVar("V")) }, "boa.functions.BoaIntrinsics.stack_peek(${0})"));
 		globalFunctions.addFunction("clear", new BoaFunction(new BoaAny(), new BoaType[] { new BoaStack(new BoaTypeVar("V")) }, "${0}.clear()"));
@@ -588,9 +591,9 @@ public class SymbolTable {
 	}
 
 	public BoaFunction getFunction(final String id, final BoaType[] formalParameters) {
-		BoaFunction function = globalFunctions.getFunction(id, formalParameters);
+		BoaFunction function = globalFunctions.checkFunction(id, formalParameters);
 		if (function == null)
-			function = this.functions.getFunction(id, formalParameters);
+			function = this.functions.checkFunction(id, formalParameters);
 		if (function == null)
 			throw new RuntimeException("no such function " + id + "(" + Arrays.toString(formalParameters) + ")");
 		return function;
