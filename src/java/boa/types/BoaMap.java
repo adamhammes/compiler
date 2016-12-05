@@ -158,4 +158,9 @@ public class BoaMap extends BoaType {
 			return false;
 		return true;
 	}
+	
+	@Override
+	public boolean hasBoaTypeVar() {
+		return true;
+	}
 }
