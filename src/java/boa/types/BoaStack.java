@@ -72,8 +72,8 @@ public class BoaStack extends BoaType {
 		if (!(that instanceof BoaStack))
 			return false;
 
-		// same for the value type
-		if (!this.type.accepts(((BoaStack) that).type))
+		// same for the value type 
+		if (!this.type.accepts(((BoaStack) that).type)) 
 			return false;
 
 		// ok
@@ -128,4 +128,11 @@ public class BoaStack extends BoaType {
 			return false;
 		return true;
 	}
+	
+
+	@Override
+	public boolean hasBoaTypeVar() {
+		return true;
+	}
+	
 }
