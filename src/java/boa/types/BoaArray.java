@@ -169,4 +169,10 @@ public class BoaArray extends BoaType {
 			return "array of none";
 		return "array of " + this.type.toString();
 	}
+	
+
+	@Override
+	public boolean hasBoaTypeVar() {
+		return true;
+	}
 }
