@@ -19,9 +19,11 @@ package boa.compiler;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import boa.functions.constraints.BoaFunctionConstraint;
+import boa.types.BoaArray;
 import boa.types.BoaFunction;
+import boa.types.BoaMap;
 import boa.types.BoaName;
+import boa.types.BoaSet;
 import boa.types.BoaStack;
 import boa.types.BoaType;
 import boa.types.BoaTypeVar;
@@ -33,33 +35,89 @@ import boa.types.BoaVarargs;
  * @author rdyer
  */
 public class FunctionTrie {
-	
-	private BoaFunctionConstraint[] functionConstraints;
+
+	private final HashMap<String, BoaType> typevars;
 	@SuppressWarnings("rawtypes")
 	private final HashMap trie;
 
 	@SuppressWarnings("rawtypes")
 	public FunctionTrie() {
 		this.trie = new HashMap();
+		this.typevars  = new HashMap<String, BoaType>();
 	}
 
-	private BoaFunction getFunction(final Object[] ids) {
+
+	private BoaFunction getFunction(final Object[] ids, HashMap<String, BoaType> typevars) {
+		
+		
 		if (this.trie.containsKey(ids[0])) {
-			if (ids[0].equals(""))
+		if (ids[0].equals(""))
 				return getFunction();
-			else
-				return ((FunctionTrie) this.trie.get(ids[0])).getFunction(Arrays.copyOfRange(ids, 1, ids.length));
-		} else {
+			else{
+				return ((FunctionTrie) this.trie.get(ids[0])).getFunction(Arrays.copyOfRange(ids, 1, ids.length), typevars);
+			}
+		} else {         
+			
+			
 			for (final Object o : this.trie.keySet()) {
+			
+				if(((BoaType) o).hasBoaTypeVar()){
+					
+					if(o instanceof BoaStack){
+						if(!typevars.containsKey(((BoaTypeVar)((BoaStack) o).getType()).getName()))
+							typevars.put((((BoaTypeVar)((BoaStack) o).getType()).getName()), (((BoaStack)ids[0]).getType()));		
+					}
+					if(o instanceof BoaMap){
+						//indexType
+						if(!typevars.containsKey(((BoaTypeVar)((BoaMap) o).getIndexType()).getName()))
+							typevars.put((((BoaTypeVar)((BoaMap) o).getIndexType()).getName()), (((BoaMap)ids[0]).getIndexType()));
+						//valueType
+						if(!typevars.containsKey(((BoaTypeVar)((BoaMap) o).getType()).getName()))
+							typevars.put((((BoaTypeVar)((BoaMap) o).getType()).getName()), (((BoaMap)ids[0]).getType()));
+						}
+					if(o instanceof BoaSet){
+						if(!typevars.containsKey(((BoaTypeVar)((BoaSet) o).getType()).getName()))
+							typevars.put((((BoaTypeVar)((BoaSet) o).getType()).getName()), (((BoaSet)ids[0]).getType()));
+						}
+					if(o instanceof BoaArray){
+						if(!typevars.containsKey(((BoaTypeVar)((BoaArray) o).getType()).getName()))
+							typevars.put((((BoaTypeVar)((BoaArray) o).getType()).getName()), (((BoaArray)ids[0]).getType()));
+						}
+					
+					}
+					
+				
 				if (o instanceof BoaVarargs && ((BoaVarargs) o).accepts((BoaType) ids[0]))
 					return ((FunctionTrie) this.trie.get(o)).getFunction();
 
-				if (o instanceof BoaType && !(ids[0] instanceof String) && ((BoaType) o).accepts((BoaType) ids[0])) {
-					final BoaFunction function = ((FunctionTrie) this.trie.get(o)).getFunction(Arrays.copyOfRange(ids, 1, ids.length));
+				
+				if(o instanceof BoaTypeVar){
+					if(!typevars.containsKey(((BoaTypeVar) o).getName())){
+						typevars.put(((BoaTypeVar) o).getName(), (BoaType)ids[0]);
+					}
+					else{
+						
+						if(((BoaType)ids[0]).compares((typevars.get(((BoaTypeVar) o).getName())))){
+							final BoaFunction function = ((FunctionTrie) this.trie.get(o)).getFunction(Arrays.copyOfRange(ids, 1, ids.length), typevars);
+							
+
+							if (function != null)
+								return function;
+						}
+					}
+						
+				}
+				
+				if (o instanceof BoaType && !(o instanceof BoaTypeVar) && !(ids[0] instanceof String) && ((BoaType) o).accepts((BoaType) ids[0])) {
+					final BoaFunction function = ((FunctionTrie) this.trie.get(o)).getFunction(Arrays.copyOfRange(ids, 1, ids.length), typevars);
+					
 
 					if (function != null)
 						return function;
 				}
+				
+				
+				
 			}
 		}
 
@@ -78,32 +136,16 @@ public class FunctionTrie {
 		final Object[] ids = new Object[formalParameters.length + 2];
 
 		ids[0] = name;
-
 		for (int i = 0; i < formalParameters.length; i++)
 			ids[i + 1] = formalParameters[i];
 
 		ids[ids.length - 1] = "";
 
-		return this.getFunction(ids);
+		typevars.clear();
+		return this.getFunction(ids, typevars);
 	}
+
 	
-	public BoaFunction checkFunction(final String name, final BoaType[] formalParameters) {
-	
-		BoaFunction function = this.getFunction(name, formalParameters);
-		if(function == null)
-			return null;
-		
-		if(this.functionConstraints == null)
-			return function;
-		
-		for (int i = 0; i < this.functionConstraints.length; i++){
-			if(!this.functionConstraints[i].isValid(formalParameters))
-				return null;
-		}
-			
-			return function;
-		
-	}
 	@SuppressWarnings("unchecked")
 	private void addFunction(final Object[] ids, final BoaFunction boaFunction) {
 		if (this.trie.containsKey(ids[0])) {
@@ -141,8 +183,4 @@ public class FunctionTrie {
 		this.addFunction(ids, boaFunction);
 	}
 	
-	public void addFunction(final String name, final BoaFunction boaFunction, BoaFunctionConstraint[] constraints) {
-		this.functionConstraints = constraints;
-		this.addFunction(name, boaFunction);		
-	}
 }
