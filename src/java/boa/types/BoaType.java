@@ -114,4 +114,9 @@ public abstract class BoaType {
 	/** {@inheritDoc} */
 	@Override
 	public abstract String toString();
+	
+	
+	public boolean hasBoaTypeVar() {
+		return false;
+	}
 }
