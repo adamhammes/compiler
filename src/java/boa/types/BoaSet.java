@@ -128,4 +128,9 @@ public class BoaSet extends BoaType {
 			return false;
 		return true;
 	}
+
+	@Override
+	public boolean hasBoaTypeVar() {
+		return true;
+	}
 }
